@@ -1,5 +1,5 @@
 [project]
-name = "bluesky-social-mcp"
+name = "mcp-bluesky"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -29,4 +29,4 @@ build-backend = "setuptools.build_meta"
 py-modules = ["server"]
 
 [project.scripts]
-bluesky-social-mcp = "server:main"
+mcp-bluesky = "server:main"

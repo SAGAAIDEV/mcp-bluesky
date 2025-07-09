@@ -17,7 +17,7 @@ startCommand:
     |-
     (config) => ({
       command: 'uvx',
-      args: ["--from", "git+https://github.com/gwbischof/bluesky-social-mcp", "bluesky-social-mcp"],
+      args: ["--from", "git+https://github.com/SAGAAIDEV/mcp-bluesky", "mcp-bluesky"],
       env: {
         BLUESKY_IDENTIFIER: config.blueskyIdentifier,
         BLUESKY_APP_PASSWORD: config.blueskyAppPassword,

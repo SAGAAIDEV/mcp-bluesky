@@ -1,4 +1,4 @@
-# Bluesky Social MCP
+# Bluesky MCP Server
 
 An MCP server for interacting with the Bluesky social network via the [atproto](https://github.com/MarshalX/atproto) client.
 
@@ -13,9 +13,9 @@ Add the following to your MCP config file (Note that the version is pinned):
 ```json
 {
   "mcpServers": {
-    "bluesky-social": {
+    "mcp-bluesky": {
       "command": "uvx",
-      "args": ["--from", "git+https://github.com/gwbischof/bluesky-social-mcp@v0.1", "bluesky-social-mcp"],
+      "args": ["--from", "git+https://github.com/SAGAAIDEV/mcp-bluesky@v0.1", "mcp-bluesky"],
       "env": {
         "BLUESKY_IDENTIFIER": "your-handle.bsky.social",
         "BLUESKY_APP_PASSWORD": "your-app-password"
@@ -25,7 +25,7 @@ Add the following to your MCP config file (Note that the version is pinned):
 }
 ```
 - For security reasons, I think its best to keep it pinned and manually change your config to update the version.
-  
+
 ## Tool Status
 All tools have been implemented and tested ✅
 
@@ -35,7 +35,7 @@ All tools have been implemented and tested ✅
 ### Profile Operations
 - ✅ `get_profile` - Get a user profile (Client method: `get_profile`)
 - ✅ `get_follows` - Get users followed by an account (Client method: `get_follows`)
-- ✅ `get_followers` - Get users who follow an account (Client method: `get_followers`) 
+- ✅ `get_followers` - Get users who follow an account (Client method: `get_followers`)
 - ✅ `follow_user` - Follow a user (Client method: `follow`)
 - ✅ `unfollow_user` - Unfollow a user (Client method: `unfollow`)
 - ✅ `mute_user` - Mute a user (Client method: `mute`)
@@ -68,16 +68,16 @@ All tools have been implemented and tested ✅
 ```bash
 {
     "mcpServers": {
-        "bluesky-social": {
+        "mcp-bluesky": {
             "command": "uv",
             "args": [
                 "--directory",
-                "/ABSOLUTE/PATH/TO/PARENT/FOLDER/bluesky-social-mcp",
+                "/ABSOLUTE/PATH/TO/PARENT/FOLDER/mcp-bluesky",
                 "run",
                 "server.py"
             ]
             "env": {
-                "BLUESKY_IDENTIFIER": "user-name.bsky.social‬",
+                "BLUESKY_IDENTIFIER": "user-name.bsky.social",
                 "BLUESKY_APP_PASSWORD": "app-password-here"
             }
         }
@@ -93,7 +93,7 @@ All tools have been implemented and tested ✅
 
 2. Run the server:
    ```bash
-   uv run bluesky-social-mcp
+   uv run mcp-bluesky
    ```
 
 ### Debug with MCP Inspector

@@ -103,7 +103,7 @@ async def app_lifespan(server: FastMCP) -> AsyncIterator[AppContext]:
 
 # Create MCP server
 mcp = FastMCP(
-    "bluesky-social",
+    "mcp-bluesky",
     lifespan=app_lifespan,
     dependencies=["atproto", "mcp"],
 )
