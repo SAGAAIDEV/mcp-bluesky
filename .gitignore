@@ -173,5 +173,5 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-# Claude
-CLAUDE.md
+# Agents
+.claude/settings.local.json
