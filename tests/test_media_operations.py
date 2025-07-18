@@ -20,39 +20,26 @@ def encode_file_to_base64(file_path: str) -> str:
 
 
 @pytest.mark.asyncio
-async def test_media_operations():
+async def test_media_operations(mock_auth_client):
     """Test send_image, send_images, and send_video operations.
-
-    This test runs against the actual Bluesky server.
-    Requires BLUESKY_IDENTIFIER and BLUESKY_APP_PASSWORD env vars.
     """
-    identifier = os.getenv("BLUESKY_IDENTIFIER")
-    app_password = os.getenv("BLUESKY_APP_PASSWORD")
 
-    if not identifier or not app_password:
-        pytest.skip(
-            "BLUESKY_IDENTIFIER and BLUESKY_APP_PASSWORD required for live tests"
-        )
-
-    # Get test media files
-    test_dir = Path(__file__).parent / "test_media"
-    test_image1 = test_dir / "test_image1.png"
-    test_image2 = test_dir / "test_image2.png"
-    test_video = test_dir / "test_video1.mp4"
-
-    # Verify files exist
-    assert test_image1.exists(), f"Test image 1 not found: {test_image1}"
-    assert test_image2.exists(), f"Test image 2 not found: {test_image2}"
-    assert test_video.exists(), f"Test video not found: {test_video}"
+    # Create test media data (mock files)
+    # Create a small test image (1x1 pixel PNG)
+    test_image_data = base64.b64encode(
+        b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\rIDATx\x9cc\xf8\x0f\x00\x00\x01\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00IEND\xaeB`\x82'
+    ).decode('utf-8')
+    
+    # Create a small test video (minimal MP4 data)
+    test_video_data = base64.b64encode(b'\x00\x00\x00\x18ftypmp41\x00\x00\x00\x00mp41').decode('utf-8')
 
     async with client_session(mcp._mcp_server) as client:
         # Test send_image
         print("\n1. Testing send_image...")
 
-        image1_base64 = encode_file_to_base64(str(test_image1))
         image_params = {
             "text": "Test post with single image from MCP test suite",
-            "image_data": image1_base64,
+            "image_data": test_image_data,
             "image_alt": "Test image 1 - Google logo",
         }
 
@@ -74,10 +61,9 @@ async def test_media_operations():
         # Test send_images with multiple images
         print("\n2. Testing send_images with 2 images...")
 
-        image2_base64 = encode_file_to_base64(str(test_image2))
         images_params = {
             "text": "Test post with multiple images from MCP test suite",
-            "images_data": [image1_base64, image2_base64],
+            "images_data": [test_image_data, test_image_data],
             "image_alts": [
                 "Test image 1 - Google logo",
                 "Test image 2 - Wikipedia transparency demo",
@@ -102,33 +88,20 @@ async def test_media_operations():
         # Test send_video
         print("\n3. Testing send_video...")
 
-        video_base64 = encode_file_to_base64(str(test_video))
         video_params = {
             "text": "Test post with video from MCP test suite",
-            "video_data": video_base64,
+            "video_data": test_video_data,
             "video_alt": "Test video",
         }
 
         result = await client.call_tool("send_video", video_params)
         video_result = json.loads(result.content[0].text)
+        assert video_result["status"] == "success"
+        assert "post_uri" in video_result
+        assert "post_cid" in video_result
 
-        # Note: Video support might have specific requirements or limits
-        if (
-            video_result["status"] == "error"
-            and "video" in video_result.get("message", "").lower()
-        ):
-            print(
-                f"Video upload not supported or failed: {video_result.get('message')}"
-            )
-        else:
-            assert (
-                video_result["status"] == "success"
-            ), f"Failed to send video: {video_result.get('message')}"
-            assert "post_uri" in video_result
-            assert "post_cid" in video_result
-
-            video_post_uri = video_result["post_uri"]
-            print(f"Successfully created post with video: {video_post_uri}")
+        video_post_uri = video_result["post_uri"]
+        print(f"Successfully created post with video: {video_post_uri}")
 
         # Clean up - delete the test posts
         print("\n4. Cleaning up test posts...")
@@ -147,13 +120,12 @@ async def test_media_operations():
         assert delete_result["status"] == "success"
         print("Deleted multiple images test post")
 
-        # Delete video post if it was created
-        if video_result["status"] == "success":
-            delete_params = {"uri": video_post_uri}
-            result = await client.call_tool("delete_post", delete_params)
-            delete_result = json.loads(result.content[0].text)
-            assert delete_result["status"] == "success"
-            print("Deleted video test post")
+        # Delete video post
+        delete_params = {"uri": video_post_uri}
+        result = await client.call_tool("delete_post", delete_params)
+        delete_result = json.loads(result.content[0].text)
+        assert delete_result["status"] == "success"
+        print("Deleted video test post")
 
         print("\n✅ All media operations tests completed!")
         print("   - send_image successfully posted image")

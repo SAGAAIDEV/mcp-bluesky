@@ -12,25 +12,16 @@ from mcp.shared.memory import (
 
 
 @pytest.mark.asyncio
-async def test_user_operations():
+async def test_user_operations(mock_auth_client):
     """Test resolve_handle, mute_user, and unmute_user operations.
-
-    This test runs against the actual Bluesky server.
-    Requires BLUESKY_IDENTIFIER and BLUESKY_APP_PASSWORD env vars.
     """
-    identifier = os.getenv("BLUESKY_IDENTIFIER")
-    app_password = os.getenv("BLUESKY_APP_PASSWORD")
-
-    if not identifier or not app_password:
-        pytest.skip(
-            "BLUESKY_IDENTIFIER and BLUESKY_APP_PASSWORD required for live tests"
-        )
 
     async with client_session(mcp._mcp_server) as client:
         # Test resolve_handle
-        print(f"\n1. Testing resolve_handle with handle={identifier}...")
+        test_handle = "test-user.bsky.social"
+        print(f"\n1. Testing resolve_handle with handle={test_handle}...")
 
-        resolve_params = {"handle": identifier}
+        resolve_params = {"handle": test_handle}
         result = await client.call_tool("resolve_handle", resolve_params)
         resolve_result = json.loads(result.content[0].text)
 
@@ -42,7 +33,7 @@ async def test_user_operations():
         assert resolve_result["did"].startswith("did:plc:")
 
         user_did = resolve_result["did"]
-        print(f"Resolved {identifier} to DID: {user_did}")
+        print(f"Resolved {test_handle} to DID: {user_did}")
 
         # For mute/unmute tests, we'll use a test account that we can safely mute/unmute
         # We'll use the Bluesky team account as a safe test target

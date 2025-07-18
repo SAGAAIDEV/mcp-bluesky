@@ -4,6 +4,7 @@ import json
 import os
 import pytest
 import asyncio
+from unittest.mock import Mock, patch
 
 from server import mcp
 from mcp.shared.memory import (
@@ -11,20 +12,125 @@ from mcp.shared.memory import (
 )
 
 
+class MockBlueskyClient:
+    """Mock Bluesky client that simulates atproto client behavior."""
+    
+    def __init__(self):
+        self.me = Mock()
+        self.me.handle = "test-user.bsky.social"
+        self.me.did = "did:plc:test123456789"
+        self._base_url = "https://bsky.social"
+        
+    def get_timeline(self, algorithm=None, cursor=None, limit=None):
+        """Mock get_timeline response."""
+        response = Mock()
+        feed_data = [
+            {
+                "post": {
+                    "uri": "at://did:plc:test123456789/app.bsky.feed.post/timeline1",
+                    "cid": "bafytimeline123",
+                    "author": {
+                        "did": "did:plc:test123456789",
+                        "handle": "test-user.bsky.social",
+                        "displayName": "Test User",
+                    },
+                    "record": {
+                        "text": "Timeline post content",
+                        "createdAt": "2023-01-01T00:00:00Z",
+                    },
+                    "replyCount": 0,
+                    "repostCount": 0,
+                    "likeCount": 0,
+                    "indexedAt": "2023-01-01T00:00:00Z",
+                }
+            }
+        ]
+        response.feed = feed_data
+        response.cursor = None
+        response.model_dump.return_value = {"feed": feed_data, "cursor": None}
+        return response
+        
+    def get_post(self, post_rkey, profile_identify=None, cid=None):
+        """Mock get_post response."""
+        response = Mock()
+        response.uri = f"at://did:plc:test123456789/app.bsky.feed.post/{post_rkey}"
+        response.cid = "bafytest123456789"
+        response.author = {
+            "did": "did:plc:test123456789",
+            "handle": profile_identify or "test-user.bsky.social",
+            "displayName": "Test User",
+        }
+        response.record = {
+            "text": "Test post content",
+            "createdAt": "2023-01-01T00:00:00Z",
+        }
+        response.replyCount = 0
+        response.repostCount = 0
+        response.likeCount = 0
+        response.indexedAt = "2023-01-01T00:00:00Z"
+        
+        response.model_dump.return_value = {
+            "uri": response.uri,
+            "cid": response.cid,
+            "author": response.author,
+            "record": response.record,
+            "replyCount": response.replyCount,
+            "repostCount": response.repostCount,
+            "likeCount": response.likeCount,
+            "indexedAt": response.indexedAt,
+        }
+        return response
+        
+    def get_posts(self, uris):
+        """Mock get_posts response."""
+        response = Mock()
+        posts = []
+        for uri in uris:
+            posts.append({
+                "uri": uri,
+                "cid": f"bafy{hash(uri) % 1000000}",
+                "author": {
+                    "did": "did:plc:test123456789",
+                    "handle": "test-user.bsky.social",
+                    "displayName": "Test User",
+                },
+                "record": {
+                    "text": f"Test post content for {uri}",
+                    "createdAt": "2023-01-01T00:00:00Z",
+                },
+                "replyCount": 0,
+                "repostCount": 0,
+                "likeCount": 0,
+                "indexedAt": "2023-01-01T00:00:00Z",
+            })
+        response.posts = posts
+        response.model_dump.return_value = {"posts": posts}
+        return response
+
+    def send_post(self, **kwargs):
+        """Mock send_post response."""
+        response = Mock()
+        response.uri = "at://did:plc:test123456789/app.bsky.feed.post/test123"
+        response.cid = "bafytest123456789"
+        return response
+
+
+@pytest.fixture
+def mock_bluesky_client():
+    """Fixture that provides a mock Bluesky client."""
+    return MockBlueskyClient()
+
+
+@pytest.fixture
+def mock_auth_client(mock_bluesky_client):
+    """Fixture that mocks the get_authenticated_client function."""
+    with patch('server.get_authenticated_client', return_value=mock_bluesky_client):
+        yield mock_bluesky_client
+
+
 @pytest.mark.asyncio
-async def test_get_operations():
-    """Test get_post, get_posts, and get_timeline operations.
-
-    This test runs against the actual Bluesky server.
-    Requires BLUESKY_IDENTIFIER and BLUESKY_APP_PASSWORD env vars.
-    """
-    identifier = os.getenv("BLUESKY_IDENTIFIER")
-    app_password = os.getenv("BLUESKY_APP_PASSWORD")
-
-    if not identifier or not app_password:
-        pytest.skip(
-            "BLUESKY_IDENTIFIER and BLUESKY_APP_PASSWORD required for live tests"
-        )
+async def test_get_operations(mock_auth_client):
+    """Test get_post, get_posts, and get_timeline operations with mocks."""
 
     async with client_session(mcp._mcp_server) as client:
         # Test get_timeline first to get some posts
@@ -33,37 +139,17 @@ async def test_get_operations():
         result = await client.call_tool("get_timeline", timeline_params)
         timeline_result = json.loads(result.content[0].text)
 
-        assert (
-            timeline_result["status"] == "success"
-        ), f"Failed to get timeline: {timeline_result.get('message')}"
+        assert timeline_result["status"] == "success"
         assert "timeline" in timeline_result
 
         # The timeline response should be a dict with 'feed' key
         timeline_data = timeline_result["timeline"]
-        assert isinstance(
-            timeline_data, dict
-        ), f"Timeline data should be dict, got {type(timeline_data)}"
-        assert "feed" in timeline_data, "Timeline should have a feed key"
+        assert isinstance(timeline_data, dict)
+        assert "feed" in timeline_data
 
         # Extract post URIs from timeline for further testing
         feed_items = timeline_data["feed"]
-
-        if len(feed_items) == 0:
-            print("No posts in timeline, creating a test post...")
-            # Create a test post to ensure we have something to work with
-            post_params = {"text": "Test post for get operations test"}
-            result = await client.call_tool("send_post", post_params)
-            test_post_result = json.loads(result.content[0].text)
-            assert test_post_result["status"] == "success"
-
-            # Wait a moment and get timeline again
-            await asyncio.sleep(2)
-            result = await client.call_tool("get_timeline", timeline_params)
-            timeline_result = json.loads(result.content[0].text)
-            timeline_data = timeline_result["timeline"]
-            feed_items = timeline_data["feed"]
-
-        assert len(feed_items) > 0, "No posts in timeline even after creating test post"
+        assert len(feed_items) > 0
 
         # Get the first post URI and extract rkey
         first_post = feed_items[0]["post"]
@@ -74,18 +160,14 @@ async def test_get_operations():
         author_did = uri_parts[2]  # did:plc:xxx
         post_rkey = uri_parts[-1]  # the rkey
 
-        print(
-            f"\n2. Testing get_post with rkey={post_rkey[:8]}... and author={author_did[:20]}..."
-        )
+        print(f"\n2. Testing get_post with rkey={post_rkey[:8]}... and author={author_did[:20]}...")
 
         # Test get_post with the extracted post
         post_params = {"post_rkey": post_rkey, "profile_identify": author_did}
         result = await client.call_tool("get_post", post_params)
         post_result = json.loads(result.content[0].text)
 
-        assert (
-            post_result["status"] == "success"
-        ), f"Failed to get post: {post_result.get('message')}"
+        assert post_result["status"] == "success"
         assert "post" in post_result
 
         # Test get_posts with multiple URIs
@@ -98,18 +180,16 @@ async def test_get_operations():
         result = await client.call_tool("get_posts", posts_params)
         posts_result = json.loads(result.content[0].text)
 
-        assert (
-            posts_result["status"] == "success"
-        ), f"Failed to get posts: {posts_result.get('message')}"
+        assert posts_result["status"] == "success"
         assert "posts" in posts_result
 
         # The posts response should have a posts key
         posts_data = posts_result["posts"]
-        assert isinstance(posts_data, dict), "Posts data should be a dict"
-        assert "posts" in posts_data, "Posts data should have a 'posts' key"
+        assert isinstance(posts_data, dict)
+        assert "posts" in posts_data
 
         returned_posts = posts_data["posts"]
-        assert len(returned_posts) > 0, "No posts returned"
+        assert len(returned_posts) > 0
 
         print("\n✅ All get operations tests passed!")
         print(f"   - get_timeline returned {len(feed_items)} posts")
