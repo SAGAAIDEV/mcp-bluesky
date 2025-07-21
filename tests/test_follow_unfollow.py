@@ -1,7 +1,6 @@
 """Tests for follow and unfollow operations."""
 
 import json
-import os
 import pytest
 import asyncio
 

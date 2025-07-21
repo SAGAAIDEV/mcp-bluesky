@@ -1,7 +1,6 @@
 """Tests for user operations: resolve_handle, mute_user, unmute_user."""
 
 import json
-import os
 import pytest
 import asyncio
 

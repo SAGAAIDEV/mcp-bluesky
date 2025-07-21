@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 """Integration tests for Bluesky MCP server profile operations."""
 import json
-import os
 import pytest
-import asyncio
 
 from server import mcp
 from mcp.shared.memory import (

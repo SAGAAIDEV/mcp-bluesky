@@ -2,10 +2,8 @@
 
 import base64
 import json
-import os
 import pytest
 import asyncio
-from pathlib import Path
 
 from server import mcp
 from mcp.shared.memory import (

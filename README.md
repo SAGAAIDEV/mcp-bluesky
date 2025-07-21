@@ -103,8 +103,9 @@ mcp dev server.py --with-editable .
 ```
 
 ### Run the tests
-- I run the tests against the actual Bluesky server.
-- The tests will use BLUESKY_IDENTIFIER, and BLUESKY_APP_PASSWORD env vars.
+- Tests include both mock-based unit tests and integration tests.
+- Integration tests run against the actual Bluesky server and require BLUESKY_IDENTIFIER and BLUESKY_APP_PASSWORD env vars.
+- Most tests use mocks for fast, reliable testing without external dependencies.
 ```bash
 uv run pytest
 ```

@@ -3,9 +3,8 @@
 
 import json
 import base64
-import uuid
 from unittest.mock import Mock, patch, MagicMock
-from typing import Dict, Any, Optional, List
+from typing import Optional, List
 import pytest
 
 from server import mcp
@@ -292,7 +291,7 @@ class MockBlueskyClient:
         feed_data = [
             {
                 "post": {
-                    "uri": f"at://did:plc:test123456789/app.bsky.feed.post/author1",
+                    "uri": "at://did:plc:test123456789/app.bsky.feed.post/author1",
                     "cid": "bafyauthor123",
                     "author": {
                         "did": "did:plc:test123456789",
@@ -449,7 +448,13 @@ def mock_bluesky_client():
 @pytest.fixture
 def mock_auth_client(mock_bluesky_client):
     """Fixture that mocks the get_authenticated_client function."""
-    with patch('server.get_authenticated_client', return_value=mock_bluesky_client):
+    # Patch the function where it's imported and used
+    with patch('mcp_bluesky.tools.auth.get_authenticated_client', return_value=mock_bluesky_client), \
+         patch('mcp_bluesky.tools.profiles.get_authenticated_client', return_value=mock_bluesky_client), \
+         patch('mcp_bluesky.tools.posts.get_authenticated_client', return_value=mock_bluesky_client), \
+         patch('mcp_bluesky.tools.interactions.get_authenticated_client', return_value=mock_bluesky_client), \
+         patch('mcp_bluesky.tools.feeds.get_authenticated_client', return_value=mock_bluesky_client), \
+         patch('mcp_bluesky.tools.media.get_authenticated_client', return_value=mock_bluesky_client):
         yield mock_bluesky_client
 
 
@@ -467,7 +472,7 @@ async def test_check_auth_status_authenticated(mock_auth_client):
 @pytest.mark.asyncio
 async def test_check_auth_status_unauthenticated():
     """Test check_auth_status without authentication."""
-    with patch('server.get_authenticated_client', side_effect=ValueError("No credentials")):
+    with patch('mcp_bluesky.tools.auth.get_authenticated_client', side_effect=ValueError("No credentials")):
         async with client_session(mcp._mcp_server) as client:
             result = await client.call_tool("check_auth_status", {})
             response = result.content[0].text.strip('"')  # Remove JSON quotes
@@ -769,11 +774,6 @@ async def test_send_images(mock_auth_client):
         b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\rIDATx\x9cc\xf8\x0f\x00\x00\x01\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00IEND\xaeB`\x82'
     ).decode('utf-8')
     
-    images = [
-        {"data": test_image_data, "alt_text": "Test image 1"},
-        {"data": test_image_data, "alt_text": "Test image 2"}
-    ]
-    
     async with client_session(mcp._mcp_server) as client:
         result = await client.call_tool("send_images", {
             "text": "Test multiple images post",
@@ -807,7 +807,7 @@ async def test_send_video(mock_auth_client):
 @pytest.mark.asyncio
 async def test_get_profile_error():
     """Test get_profile with authentication error."""
-    with patch('server.get_authenticated_client', side_effect=ValueError("No credentials")):
+    with patch('mcp_bluesky.tools.auth.get_authenticated_client', side_effect=ValueError("No credentials")):
         async with client_session(mcp._mcp_server) as client:
             result = await client.call_tool("get_profile", {})
             response = json.loads(result.content[0].text)
@@ -818,7 +818,7 @@ async def test_get_profile_error():
 @pytest.mark.asyncio
 async def test_send_post_error():
     """Test send_post with authentication error."""
-    with patch('server.get_authenticated_client', side_effect=ValueError("No credentials")):
+    with patch('mcp_bluesky.tools.auth.get_authenticated_client', side_effect=ValueError("No credentials")):
         async with client_session(mcp._mcp_server) as client:
             result = await client.call_tool("send_post", {"text": "Test post"})
             response = json.loads(result.content[0].text)
@@ -833,7 +833,7 @@ async def test_bluesky_api_error():
     mock_client = MagicMock()
     mock_client.get_profile.side_effect = Exception("API Error")
     
-    with patch('server.get_authenticated_client', return_value=mock_client):
+    with patch('mcp_bluesky.tools.profiles.get_authenticated_client', return_value=mock_client):
         async with client_session(mcp._mcp_server) as client:
             result = await client.call_tool("get_profile", {})
             response = json.loads(result.content[0].text)

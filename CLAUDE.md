@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Bluesky MCP (Model Context Protocol) server that provides tools for interacting with the Bluesky social network via the atproto client. The server is implemented as a single-file Python application (`server.py`) that exposes various Bluesky API operations as MCP tools.
+This is a Bluesky MCP (Model Context Protocol) server that provides tools for interacting with the Bluesky social network via the atproto client. The server uses a modular architecture with a main entry point (`server.py`) and organized modules in the `mcp_bluesky/` package that expose various Bluesky API operations as MCP tools.
 
 ## Development Commands
 
@@ -60,17 +60,36 @@ mcp dev server.py --with-editable .
 
 ### Core Components
 
-- **server.py**: Main application file containing all MCP tools and business logic
+- **server.py**: Main entry point that orchestrates the modular architecture
+- **mcp_bluesky/**: Core package containing the modular implementation
 - **FastMCP Framework**: Uses the FastMCP library for MCP server implementation
 - **atproto Client**: Bluesky API client for all social network operations
 - **Authentication**: Uses environment variables for Bluesky credentials
 
+### Modular Architecture
+
+**Core Modules:**
+- **mcp_bluesky/config.py**: Environment configuration management
+- **mcp_bluesky/client.py**: Bluesky client creation and authentication
+- **mcp_bluesky/types.py**: Type definitions and data classes
+- **mcp_bluesky/context.py**: MCP context lifecycle management
+
+**Tool Modules:**
+- **mcp_bluesky/tools/auth.py**: Authentication status tools
+- **mcp_bluesky/tools/profiles.py**: Profile and social operations
+- **mcp_bluesky/tools/posts.py**: Post creation and management
+- **mcp_bluesky/tools/interactions.py**: Likes, reposts, and social interactions
+- **mcp_bluesky/tools/feeds.py**: Timeline and feed operations
+- **mcp_bluesky/tools/media.py**: Image and video posting
+- **mcp_bluesky/tools/utilities.py**: Common helper functions
+
 ### Key Design Patterns
 
-1. **Single-file Architecture**: All tools are implemented in one file for simplicity
+1. **Modular Architecture**: Tools organized by functionality with clear separation of concerns
 2. **Lazy Authentication**: Client authentication occurs on first use via `get_authenticated_client()`
 3. **Context Management**: Uses FastMCP's context system for request lifecycle management
 4. **Error Handling**: Consistent error response format with status/message structure
+5. **Dependency Injection**: Clean separation between configuration, client management, and tool logic
 
 ### Environment Configuration
 
@@ -92,10 +111,12 @@ The server provides MCP tools organized into functional categories:
 
 ### Testing Strategy
 
-- Integration tests run against actual Bluesky API
-- Tests create/delete real posts to verify functionality
-- Test media files located in `tests/test_media/`
-- Tests require valid Bluesky credentials to run
+- **Mock-based Tests**: Comprehensive unit tests using mock Bluesky clients in `tests/conftest.py`
+- **Integration Tests**: Some tests run against actual Bluesky API for end-to-end verification
+- **Modular Test Structure**: Tests organized by functionality matching the tool module structure
+- **Test Coverage**: 39 tests covering all tool categories and error scenarios
+- **Mock Patches**: Tests patch `get_authenticated_client` in each tool module for proper isolation
+- Tests require valid Bluesky credentials for integration tests (BLUESKY_IDENTIFIER and BLUESKY_APP_PASSWORD env vars)
 
 ### Installation Methods
 
@@ -110,6 +131,7 @@ The server supports multiple installation methods:
 - Media operations (images/videos) expect base64-encoded data
 - The server maintains a single authenticated client instance per session
 - Posts are created with real data - use test accounts for development
+- **Backward Compatibility**: The main `server.py` entry point is preserved, so existing installations and configurations continue to work without changes
 
 ## Project Management
 

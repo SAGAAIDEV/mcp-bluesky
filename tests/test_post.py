@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 """Integration tests for Bluesky MCP server post operations."""
 import json
-import os
 import pytest
 import uuid
-import asyncio
 from unittest.mock import Mock, patch
 
 from server import mcp
@@ -87,7 +85,13 @@ def mock_bluesky_client():
 @pytest.fixture
 def mock_auth_client(mock_bluesky_client):
     """Fixture that mocks the get_authenticated_client function."""
-    with patch('server.get_authenticated_client', return_value=mock_bluesky_client):
+    # Patch the function where it's imported and used
+    with patch('mcp_bluesky.tools.auth.get_authenticated_client', return_value=mock_bluesky_client), \
+         patch('mcp_bluesky.tools.profiles.get_authenticated_client', return_value=mock_bluesky_client), \
+         patch('mcp_bluesky.tools.posts.get_authenticated_client', return_value=mock_bluesky_client), \
+         patch('mcp_bluesky.tools.interactions.get_authenticated_client', return_value=mock_bluesky_client), \
+         patch('mcp_bluesky.tools.feeds.get_authenticated_client', return_value=mock_bluesky_client), \
+         patch('mcp_bluesky.tools.media.get_authenticated_client', return_value=mock_bluesky_client):
         yield mock_bluesky_client
 
 
