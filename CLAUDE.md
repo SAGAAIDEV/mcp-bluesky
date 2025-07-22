@@ -69,10 +69,19 @@ mcp dev server.py --with-editable .
 ### Modular Architecture
 
 **Core Modules:**
-- **mcp_bluesky/config.py**: Environment configuration management
 - **mcp_bluesky/client.py**: Bluesky client creation and authentication
 - **mcp_bluesky/types.py**: Type definitions and data classes
 - **mcp_bluesky/context.py**: MCP context lifecycle management
+
+**Configuration Package:**
+- **mcp_bluesky/config/settings.py**: Enhanced environment configuration with YAML support
+- **mcp_bluesky/config/__init__.py**: Configuration API exports
+
+**Utility Package:**
+- **mcp_bluesky/utils/validation.py**: Input validation framework (Phase 1 ready)
+- **mcp_bluesky/utils/rate_limiting.py**: Rate limiting framework (Phase 2 ready)
+- **mcp_bluesky/utils/media_utils.py**: Media processing utilities (Phase 3 ready)
+- **mcp_bluesky/utils/decorators.py**: Common decorators and base classes
 
 **Tool Modules:**
 - **mcp_bluesky/tools/auth.py**: Authentication status tools
@@ -82,6 +91,10 @@ mcp dev server.py --with-editable .
 - **mcp_bluesky/tools/feeds.py**: Timeline and feed operations
 - **mcp_bluesky/tools/media.py**: Image and video posting
 - **mcp_bluesky/tools/utilities.py**: Common helper functions
+
+**Test Structure:**
+- **tests/unit/**: Unit tests organized by module (utils/, config/, tools/)
+- **tests/integration/**: Integration tests (coming in future phases)
 
 ### Key Design Patterns
 
